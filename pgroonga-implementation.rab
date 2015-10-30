@@ -1,0 +1,18 @@
+= PGroongaの実装
+
+: subtitle
+   (('note:PGroonga implementation'))
+: author
+   須藤功平
+: institution
+   クリアコード
+: content-source
+   PostgreSQLカンファレンス2015
+: date
+   2015-11-27
+: allotted-time
+   40m
+: theme
+   .
+
+= xxx

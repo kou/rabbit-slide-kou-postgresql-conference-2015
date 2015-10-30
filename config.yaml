@@ -1,0 +1,24 @@
+---
+id: postgresql-conference-2015
+base_name: pgroonga-implementation
+tags:
+- rabbit
+- pgroonga
+- postgresql
+- groonga
+presentation_date: 2015-11-27
+version: 2015.11.27.0
+licenses:
+- CC BY-SA 4.0
+slideshare_id: 
+speaker_deck_id: 
+ustream_id: 
+vimeo_id: 
+youtube_id: 
+author:
+  markup_language: :rd
+  name: Kouhei Sutou
+  email: kou@clear-code.com
+  rubygems_user: kou
+  slideshare_user: kou
+  speaker_deck_user: kou
