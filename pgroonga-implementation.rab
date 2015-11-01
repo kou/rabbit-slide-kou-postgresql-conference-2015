@@ -15,4 +15,165 @@
 : theme
    .
 
+= （建前の）目的
+
+PostgreSQLのamindexを説明
+
+= 方法
+
+PGroongaの実装を紹介\n
+(('note:（PGroongaはamindexとして実装されているため）'))
+
+= 本当の目的
+
+PGroongaの自慢
+
+= PGroongaとは
+
+amindexの一種
+
+= amindex
+
+インデックスの\n
+実装を\n
+PostgreSQLに\n
+追加する仕組み
+
+= amindexの使い方
+
+  # coderay sql
+  CREATE INDEX name ON table
+    USING pgroonga (column);
+
+(('tag:center'))
+組み込みのインデックスと同じ\n
+（(({USING}))を指定するだけ）
+
+= PGroongaの提供機能
+
+全文検索機能
+
+= PostgreSQLと全文検索1
+
+  # coderay sql
+  CREATE INDEX name ON table
+    USING gin (to_tsvector('english', column));
+  SELECT * FROM table
+    WHERE to_tsvector('english', column) @@ '...';
+
+(('tag:center'))\n
+tsvectorってなんだろう？\n
+(('note:http://www.postgresql.org/docs/current/static/textsearch-tables.html'))
+
+= PostgreSQLと全文検索2
+
+  # coderay sql
+  CREATE INDEX name ON table
+    USING gin (column gin_trgm_ops);
+  SELECT * FROM table
+    WHERE column % '...';
+
+(('tag:center'))\n
+少しシンプルに\n
+でも日本語はダメ\n
+(('note:http://www.postgresql.org/docs/current/static/pgtrgm.html'))
+
+= PostgreSQLと全文検索
+
+  * よくわからないものがある
+  * 日本語は使えない
+
+= PGroongaとPostgreSQL
+
+  * よくわからないものがない
+  * 日本語も使える
+
+= PGroongaを使う
+
+  # coderay sql
+  CREATE INDEX name ON table
+    USING pgroonga (column);
+  SELECT * FROM table
+    WHERE column @@ '全文検索';
+
+= しかも速い！
+
+= インデックス作成
+
+  # RT
+  delimiter = [|]
+
+  元データの\nロード時間 | インデックス\n作成時間
+
+  16分31秒 | 25分37秒
+
+(('tag:center'))\n
+データ：Wikipedia日本語版
+
+= インデックス作成：比較
+
+  # RT
+  delimiter = [|]
+
+  PGroonga | pg_bigm
+
+  25分37秒 | 5時間56分15秒
+
+(('tag:center'))\n
+pg_bigmより約14倍速い！
+
+= ヒット数と検索時間
+
+  # RT
+  delimiter = [|]
+
+  ヒット数 | 検索時間
+
+  368 | 0.030s(('   '))
+  17,172 | 0.121s(('   '))
+  22,885 | 0.179s(('   '))
+  625,792 | 0.646s(*)
+
+(('note:(*) work_memを10MBに増やしている'))
+
+= 検索時間：比較
+
+  # RT
+  delimiter = [|]
+
+  ヒット数 | PGroonga | pg_bigm
+
+  368 | 0.030s(!) | 0.107s(('   '))
+  17,172 | 0.121s(!) | 1.224s(('   '))
+  22,885 | 0.179s(!) | 2.472s(('   '))
+  625,792 | 0.646s(('   ')) | 0.556s(!)
+
+(('tag:center'))\n
+PGroongaは安定して速い！
+
+= なぜ速いのか
+
+バックエンドがGroonga
+
+= Groonga
+
+  * 本格的な全文検索エンジン
+  * 2006年から開発
+
+= Groongaは更新が速い
+
+追加時に\n
+参照ロックなし
+
+= 参照ロックなし
+
+TODO: 更新中のロック情報を表示
+
 = xxx
+
+  * 動的更新は参照ロックフリー
+    * 更新中も参照をロックしない！
+
+
+  * 静的構築をサポート
+    * 構築中は使えないけど速い(('note:（O(n)）'))
