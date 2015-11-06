@@ -1,7 +1,7 @@
 = PGroongaの実装
 
 : subtitle
-   (('note:PGroonga implementation'))
+   (('note:ぴーじーるんがのじっそう'))
 : author
    須藤功平
 : institution
@@ -61,8 +61,9 @@ PostgreSQLに\n
   SELECT * FROM table
     WHERE to_tsvector('english', column) @@ '...';
 
-(('tag:center'))\n
-tsvectorってなんだろう？\n
+(('tag:center'))
+tsvectorを使う\n
+見慣れないものがいろいろ\n
 (('note:http://www.postgresql.org/docs/current/static/textsearch-tables.html'))
 
 = PostgreSQLと全文検索2
@@ -73,19 +74,19 @@ tsvectorってなんだろう？\n
   SELECT * FROM table
     WHERE column % '...';
 
-(('tag:center'))\n
-少しシンプルに\n
-でも日本語はダメ\n
+(('tag:center'))
+pg_trgmを使う\n
+シンプルだけど日本語はダメ\n
 (('note:http://www.postgresql.org/docs/current/static/pgtrgm.html'))
 
 = PostgreSQLと全文検索
 
-  * よくわからないものがある
+  * 見慣れないものがいろいろ
   * 日本語は使えない
 
 = PGroongaとPostgreSQL
 
-  * よくわからないものがない
+  * 見慣れないものは名前だけ
   * 日本語も使える
 
 = PGroongaを使う
@@ -95,6 +96,9 @@ tsvectorってなんだろう？\n
     USING pgroonga (column);
   SELECT * FROM table
     WHERE column @@ '全文検索';
+
+(('tag:center'))
+USING pgroongaとするだけ
 
 = しかも速い！
 
@@ -107,7 +111,7 @@ tsvectorってなんだろう？\n
 
   16分31秒 | 25分37秒
 
-(('tag:center'))\n
+(('tag:center'))
 データ：Wikipedia日本語版
 
 = インデックス作成：比較
@@ -119,7 +123,7 @@ tsvectorってなんだろう？\n
 
   25分37秒 | 5時間56分15秒
 
-(('tag:center'))\n
+(('tag:center'))
 pg_bigmより約14倍速い！
 
 = ヒット数と検索時間
@@ -146,9 +150,11 @@ pg_bigmより約14倍速い！
   368 | 0.030s(!) | 0.107s(('   '))
   17,172 | 0.121s(!) | 1.224s(('   '))
   22,885 | 0.179s(!) | 2.472s(('   '))
-  625,792 | 0.646s(('   ')) | 0.556s(!)
+  625,792(*) | 0.646s(('   ')) | 0.556s(!)
 
-(('tag:center'))\n
+(('note:(*) 他は検索語が3文字以上でこれだけ2文字'))
+
+(('tag:center'))
 PGroongaは安定して速い！
 
 = なぜ速いのか
@@ -157,23 +163,175 @@ PGroongaは安定して速い！
 
 = Groonga
 
-  * 本格的な全文検索エンジン
-  * 2006年から開発
+((*本格的な*))\n
+全文検索\n
+エンジン
 
-= Groongaは更新が速い
+= 本格的な例1
 
-追加時に\n
+(('tag:center'))
+常時更新・常時検索に強い
+
+この特徴が有用なサービス例：
+
+  * SNS
+    * イメージ：Twitter
+  * ナレッジ共有サービス
+    * イメージ：Qiita・teratail
+
+= 常時更新・検索に強い？
+
+更新中も\n
+参照性能が\n
+落ちない
+
+= 落ちない理由
+
+更新時に\n
 参照ロックなし
 
-= 参照ロックなし
+= 参照ロック
 
-TODO: 更新中のロック情報を表示
+獲得したら\n
+他の処理は\n
+参照不可になる\n
+ロック
 
-= xxx
+= GINと更新と参照
 
-  * 動的更新は参照ロックフリー
-    * 更新中も参照をロックしない！
+TODO:図にする
 
+  * 接続1：INSERT開始
+  * 接続2：GINを使ったSELECT開始
+  * 接続2：((*（ブロック）*))
+  * 接続1：INSERT終了
+  * 接続2：GINを使ったSELECT終了
 
-  * 静的構築をサポート
-    * 構築中は使えないけど速い(('note:（O(n)）'))
+= Groongaと更新と参照
+
+TODO:図にする
+
+  * 接続1：INSERT開始
+  * 接続2：GINを使ったSELECT開始
+  * 接続2：GINを使ったSELECT終了
+  * 接続1：INSERT終了
+
+= 参照ロックフリーの実現
+
+TODO:図にする
+
+  (1) 新しいデータを作る
+  (2) アトミックにポインターを差し替える
+
+= amindexでのポイント
+
+  * (({Lock*()}))を呼ばない
+    * (({Lock*()}))：PostgreSQLが提供しているロックAPI
+    * 呼ぶとせっかくのGroongaの参照ロックフリーの有意性を殺してしまう
+
+= 本格的な例2
+
+(('tag:center'))
+継続的な更新に強い
+
+この特徴が有用なサービス例：
+
+  * SNS
+    * イメージ：Twitter・Facebook
+  * チャット
+    * イメージ：Slack
+
+= 継続的な更新に強い？
+
+  * 間欠的な性能劣化がない
+    * 更新も検索も
+  * GINは両方ある
+    * (({FASTUPDATE}))を無効にしていない場合
+
+= 間欠的性能劣化がない理由
+
+  * 常に最新ポスティングリストを\n
+    維持しているから
+    * 更新負荷が高くならない対策入り\n
+      (('note:https://github.com/groonga/groonga/wiki/Memo'))
+  * GINは維持をサボって高速化
+    * サボったつけを払うときに性能劣化
+    * 例：検索時・更新が溜まりすぎた時
+
+= amindexでのポイント
+
+特になし
+
+= 本格的な例3
+
+(('tag:center'))
+インデックスの作り直しが速い
+
+この特徴が有用なケース：
+
+  * ダンプのリストア
+  * サービス復旧
+
+= 速い理由
+
+静的\n
+インデックス\n
+構築を\n
+サポート
+
+= インデックス構築方法
+
+  * 動的
+    * 計算量：O(n(('sup:2')))
+    * 構築中も完了した分は検索可能
+  * 静的
+    * 計算量：O(n)
+    * 構築完了まで使えないが速い
+
+(('note:n:文書数'))
+
+= SQL
+
+  # coderay sql
+  -- 動的
+  CREATE INDEX ...;
+  INSERT ...;
+  -- 静的
+  CREATE INDEX ...;
+  INSERT ...;
+
+= amindexでのポイント
+
+  * (({aminsert()}))で\n
+    動的インデックス構築を実装
+  * (({ambuild()}))で\n
+    静的インデックス構築を実装
+
+= 本格的な例4
+
+(('tag:center'))
+削除が速い
+
+この特徴が有用なケース：
+
+  * (({VACUUM}))
+
+= 速い理由
+
+TODO: 図を入れる
+
+  * ピンポイントで\n
+    ポスティングリストを\n
+    更新するから
+    * 注：削除対象の文書とIDが必要
+  * GINはすべての\n
+    ポスティングリストを\n
+    スキャンする
+    * 注：削除対象の文書IDだけが必要
+
+= amindexでのポイント
+
+  * (({ambulkdelete()}))でctidから\n
+    インデックス対象のデータを\n
+    参照できるようにする
+    * PostgreSQLからは取得できない
