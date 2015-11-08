@@ -34,8 +34,7 @@ amindexの一種
 
 = amindex
 
-インデックスの\n
-実装を\n
+索引の実装を\n
 PostgreSQLに\n
 追加する仕組み
 
@@ -46,12 +45,18 @@ PostgreSQLに\n
     USING pgroonga (column);
 
 (('tag:center'))
-組み込みのインデックスと同じ\n
+組み込みの索引と同じ\n
 （(({USING}))を指定するだけ）
 
 = PGroongaの提供機能
 
+索引を使った\n
+((*超高速な*))\n
 全文検索機能
+
+= PostgreSQLと全文検索
+
+課題あり
 
 = PostgreSQLと全文検索1
 
@@ -62,9 +67,9 @@ PostgreSQLに\n
     WHERE to_tsvector('english', column) @@ '...';
 
 (('tag:center'))
-tsvectorを使う\n
-見慣れないものがいろいろ\n
-(('note:http://www.postgresql.org/docs/current/static/textsearch-tables.html'))
+組み込み機能を使う\n
+日本語非対応\n
+(('note:http://www.postgresql.org/docs/current/static/textsearch.html'))
 
 = PostgreSQLと全文検索2
 
@@ -75,19 +80,17 @@ tsvectorを使う\n
     WHERE column % '...';
 
 (('tag:center'))
-pg_trgmを使う\n
-シンプルだけど日本語はダメ\n
+contrib/pg_trgmを使う\n
+日本語非対応\n
 (('note:http://www.postgresql.org/docs/current/static/pgtrgm.html'))
 
 = PostgreSQLと全文検索
 
-  * 見慣れないものがいろいろ
-  * 日本語は使えない
+日本語非対応
 
 = PGroongaとPostgreSQL
 
-  * 見慣れないものは名前だけ
-  * 日本語も使える
+日本語対応！
 
 = PGroongaを使う
 
@@ -98,33 +101,9 @@ pg_trgmを使う\n
     WHERE column @@ '全文検索';
 
 (('tag:center'))
-USING pgroongaとするだけ
+日本語対応！
 
 = しかも速い！
-
-= インデックス作成
-
-  # RT
-  delimiter = [|]
-
-  元データの\nロード時間 | インデックス\n作成時間
-
-  16分31秒 | 25分37秒
-
-(('tag:center'))
-データ：Wikipedia日本語版
-
-= インデックス作成：比較
-
-  # RT
-  delimiter = [|]
-
-  PGroonga | pg_bigm
-
-  25分37秒 | 5時間56分15秒
-
-(('tag:center'))
-pg_bigmより約14倍速い！
 
 = ヒット数と検索時間
 
@@ -139,6 +118,10 @@ pg_bigmより約14倍速い！
   625,792 | 0.646s(*)
 
 (('note:(*) work_memを10MBに増やしている'))
+
+(('tag:center'))
+データ：Wikipedia日本語版\n
+(('note:約184万レコード・平均サイズ約3.8KB'))
 
 = 検索時間：比較
 
@@ -159,13 +142,28 @@ PGroongaは安定して速い！
 
 = なぜ速いのか
 
-バックエンドがGroonga
+バックエンドが\n
+外部の本格的な\n
+全文検索\n
+ライブラリー
+
+= amindexでのポイント
+
+  * (({_PG_init()}))
+    * ライブラリーを初期化
+  * (({on_proc_exit()}))
+    * 後始末
+
+= 全文検索ライブラリー
+
+Groonga
 
 = Groonga
 
 ((*本格的な*))\n
 全文検索\n
-エンジン
+エンジン\n
+(('note:サーバーとしてもライブラリーとしても使える'))
 
 = 本格的な例1
 
@@ -199,22 +197,21 @@ PGroongaは安定して速い！
 
 = GINと更新と参照
 
-TODO:図にする
-
-  * 接続1：INSERT開始
-  * 接続2：GINを使ったSELECT開始
-  * 接続2：((*（ブロック）*))
-  * 接続1：INSERT終了
-  * 接続2：GINを使ったSELECT終了
+  # image
+  # src = images/read-while-write-gin.svg
+  # relative_height = 95
 
 = Groongaと更新と参照
 
-TODO:図にする
+  # image
+  # src = images/read-while-write-groonga.svg
+  # relative_height = 95
 
-  * 接続1：INSERT開始
-  * 接続2：GINを使ったSELECT開始
-  * 接続2：GINを使ったSELECT終了
-  * 接続1：INSERT終了
+= PGroongaと更新と参照
+
+  # image
+  # src = images/read-while-write-pgroonga.svg
+  # relative_height = 95
 
 = 参照ロックフリーの実現
 
@@ -392,3 +389,28 @@ TODO: 図を入れる
     * ネジ→ネジ OR ボルト
   * ステミング
     * found/finds→find
+
+= 索引作成
+
+  # RT
+  delimiter = [|]
+
+  元データの\nロード時間 | 索引\n作成時間
+
+  16分31秒 | 25分37秒
+
+(('tag:center'))
+データ：Wikipedia日本語版
+
+= 索引作成：比較
+
+  # RT
+  delimiter = [|]
+
+  PGroonga | pg_bigm
+
+  25分37秒 | 5時間56分15秒
+
+(('tag:center'))
+pg_bigmより約14倍速い！
+
