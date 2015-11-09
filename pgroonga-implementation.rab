@@ -168,6 +168,56 @@ Groonga
 = 本格的な例1
 
 (('tag:center'))
+長い文書でも検索性能が落ちない
+
+この特徴が有用なサービス例：
+
+  * Wiki
+    * イメージ：Wikipedia
+  * ドキュメント検索
+    * イメージ：ファイルサーバー検索
+
+= 長い文書でも速い理由
+
+((*完全*))\n
+転置索引
+
+= 転置索引
+
+  * 完全：位置情報あり
+    * Groonga
+  * 無印：位置情報なし
+    * GIN
+
+= 転置索引の違い
+
+  # image
+  # src = images/inverted-index.svg
+  # relative_height = 100
+
+= 索引での検索の違い
+
+  # image
+  # src = images/search-with-inverted-index.svg
+  # relative_height = 100
+
+= 検索速度の違い
+
+  * 完全転置索引：安定して速い
+    * 索引だけで検索完了
+  * 転置索引：速さが安定しない
+    * 索引での検索+全件スキャン
+    * 候補文書が多い・長い→遅くなる
+
+= amindexでのポイント
+
+  * 全件スキャンを無効にする
+    * (({scan->xs_recheck = false}))
+    * (({tbm_add_tuples(..., false)}))
+
+= 本格的な例2
+
+(('tag:center'))
 常時更新・常時検索に強い
 
 この特徴が有用なサービス例：
@@ -225,56 +275,6 @@ Groonga
     (('note:(*) PostgreSQL提供のロックAPI'))
     * 呼ぶとGroongaの参照ロックフリーの有意性を殺してしまう
 
-= 本格的な例2
-
-(('tag:center'))
-長い文書でも検索性能が落ちない
-
-この特徴が有用なサービス例：
-
-  * Wiki
-    * イメージ：Wikipedia
-  * ドキュメント検索
-    * イメージ：ファイルサーバー検索
-
-= 長い文書でも速い理由
-
-((*完全*))\n
-転置索引
-
-= 転置索引
-
-  * 完全：位置情報あり
-    * Groonga
-  * 無印：位置情報なし
-    * GIN
-
-= 転置索引の違い
-
-  # image
-  # src = images/inverted-index.svg
-  # relative_height = 100
-
-= 索引での検索の違い
-
-  # image
-  # src = images/search-with-inverted-index.svg
-  # relative_height = 100
-
-= 検索速度の違い
-
-  * 完全転置索引：安定して速い
-    * 索引だけで検索完了
-  * 転置索引：速さが安定しない
-    * 索引での検索+全件スキャン
-    * 候補文書が多い・長い→遅くなる
-
-= amindexでのポイント
-
-  * 全件スキャンを無効にする
-    * (({scan->xs_recheck = false}))
-    * (({tbm_add_tuples(..., false)}))
-
 = 本格的な例3
 
 (('tag:center'))
@@ -304,11 +304,79 @@ Groonga
     * サボったつけを払うときに性能劣化
     * 例：検索時・更新が溜まりすぎた時
 
+= 本格的な例4
+
+(('tag:center'))
+索引の作り直しが速い
+
+この特徴が有用なケース：
+
+  * ダンプのリストア
+  * サービス復旧
+
+= 速い理由
+
+静的索引構築を\n
+サポート
+
+= 索引構築方法
+
+  * 動的
+    * 計算量：O(n(('sup:2')))
+    * 構築中も完了した分は検索可能
+  * 静的
+    * 計算量：O(n)
+    * 構築完了まで使えないが速い
+
+(('note:n:文書数'))
+
+= 索引構築
+
+  # RT
+  delimiter = [|]
+
+  元データの\nロード時間 | 索引\n構築時間
+
+  16分31秒 | 25分37秒
+
+(('tag:center'))
+データ：Wikipedia日本語版
+
+= 索引構築：比較
+
+  # RT
+  delimiter = [|]
+
+  PGroonga | pg_bigm
+
+  25分37秒 | 5時間56分15秒
+
+(('tag:center'))
+pg_bigmより約14倍速い！
+
+= SQL
+
+  # coderay sql
+  -- 動的
+  CREATE INDEX ...;
+  INSERT ...;
+  -- 静的
+  INSERT ...;
+  CREATE INDEX ...;
+
+= amindexでのポイント
+
+  * (({aminsert()}))で\n
+    動的インデックス構築を実装
+  * (({ambuild()}))で\n
+    静的インデックス構築を実装
+
 = 速い理由のまとめ
 
-  * 更新中も検索可能
   * 索引だけで検索可能
+  * 更新中も検索可能
   * 間欠的な性能劣化なし
+  * 索引構築が速い
 
 = xxx
 
@@ -331,41 +399,6 @@ TODO: 図を入れる
 
   * ダンプのリストア
   * サービス復旧
-
-= 速い理由
-
-静的\n
-インデックス\n
-構築を\n
-サポート
-
-= インデックス構築方法
-
-  * 動的
-    * 計算量：O(n(('sup:2')))
-    * 構築中も完了した分は検索可能
-  * 静的
-    * 計算量：O(n)
-    * 構築完了まで使えないが速い
-
-(('note:n:文書数'))
-
-= SQL
-
-  # coderay sql
-  -- 動的
-  CREATE INDEX ...;
-  INSERT ...;
-  -- 静的
-  CREATE INDEX ...;
-  INSERT ...;
-
-= amindexでのポイント
-
-  * (({aminsert()}))で\n
-    動的インデックス構築を実装
-  * (({ambuild()}))で\n
-    静的インデックス構築を実装
 
 = 本格的な例4
 
@@ -452,28 +485,4 @@ TODO: 図を入れる
     * ネジ→ネジ OR ボルト
   * ステミング
     * found/finds→find
-
-= 索引作成
-
-  # RT
-  delimiter = [|]
-
-  元データの\nロード時間 | 索引\n作成時間
-
-  16分31秒 | 25分37秒
-
-(('tag:center'))
-データ：Wikipedia日本語版
-
-= 索引作成：比較
-
-  # RT
-  delimiter = [|]
-
-  PGroonga | pg_bigm
-
-  25分37秒 | 5時間56分15秒
-
-(('tag:center'))
-pg_bigmより約14倍速い！
 
