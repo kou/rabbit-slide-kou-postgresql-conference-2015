@@ -358,30 +358,6 @@ pg_bigmより約14倍速い！
 
 (('note:n:文書数'))
 
-= 索引構築
-
-  # RT
-  delimiter = [|]
-
-  元データの\nロード時間 | 索引\n構築時間
-
-  16分31秒 | 25分37秒
-
-(('tag:center'))
-データ：Wikipedia日本語版
-
-= 索引構築：比較
-
-  # RT
-  delimiter = [|]
-
-  PGroonga | pg_bigm
-
-  25分37秒 | 5時間56分15秒
-
-(('tag:center'))
-pg_bigmより約14倍速い！
-
 = SQL
 
   # coderay sql
@@ -394,10 +370,10 @@ pg_bigmより約14倍速い！
 
 = amindexでのポイント
 
-  * (({aminsert()}))で\n
-    動的インデックス構築を実装
-  * (({ambuild()}))で\n
-    静的インデックス構築を実装
+  * (({aminsert()}))
+    * 動的インデックス構築を実装
+  * (({ambuild()}))
+    * 静的インデックス構築を実装
 
 = 速い理由のまとめ
 
@@ -427,6 +403,21 @@ pg_bigmより約14倍速い！
 
 = 独自機能2
 
+配列+全文検索
+
+= 例
+
+  # coderay sql
+  CREATE TABLE logs (hosts text[]);
+  INSERT INTO logs
+    VALUES (Array['web', 'db']);
+  CREATE INDEX index ON logs
+    USING pgroonga (hosts);
+  SELECT * FROM logs
+    WHERE hosts @@ '各ホスト名を全文検索';
+
+= 独自機能3
+
 JSON+全文検索
 
 = 例
@@ -445,17 +436,113 @@ JSON+全文検索
 (('tag:center'))
 JSON内の全テキストから全文検索
 
+= 独自機能4
+
+ノーマライザー
+
+= ノーマライザー
+
+  * 文字を正規化するモジュール
+    * 表記の違いを吸収できる
+  * (('wait'))アルファベット：全部小文字
+  * (('wait'))ひらがな・カタカナ：全部全角
+  * (('wait'))㍉→ミリ
+  * (('wait'))UnicodeのNFKCベース
+
+= 独自機能5
+
+トークナイザー
+
+= トークナイザー
+
+  * キーワード切り出しモジュール
+    * クエリーに指定できる\n
+      キーワードを調整
+  * 例：すもも|も|もも|も
+
+= デフォルト：可変長Ngram
+
+  * 英語：字種区切り
+    * 例：Hello|World|!!!
+    * Bigramだとノイズが多い
+  * 日本語：Bigram
+    * 例：ポスグレ→ポス|スグ|グレ|レ
+    * 漏れがない
+
+= 形態素解析器ベース
+
+  * MeCab：OSS
+    * 新語対応には辞書メンテが必要
+    * 参考：mecab-ipadic-neologd
+  * JMAT：商用製品
+    * ジャストシステム社製
+    * ATOKでも使っている辞書を提供
+    * 新語にも強い\n
+      (('note:参考：「JMAT Groonga Tokenizer Talks」で検索'))
+
+= amindexでのポイント
+
+  * (({amoptions()}))
+    * (({CREATE INDEX}))でのオプションを定義
+
+  # coderay sql
+  CREATE INDEX index ON memos
+    USING pgroonga (content)
+     WITH (normalizer = 'NormalizerMySQLUnicodeCI',
+           tokenizer  = 'TokenMecab');
+
 = 速さ以外の利点2
 
-独自じゃない機能
+見慣れた機能\n
+(('note:（B-tree・GINの代わりに使える）'))
 
 = タグ検索
 
+  # coderay sql
+  CREATE TABLE memos (
+    tags varchar(1023)[]
+  );
+  CREATE INDEX index ON memos
+    USING pgroonga (tags);
+  SELECT * FROM memos
+    WHERE tags %% 'タグ';
+
 = 範囲検索
 
-= index only scan
+  # coderay sql
+  CREATE TABLE users (age int);
+  CREATE INDEX index ON users
+    USING pgroonga (age);
+  SELECT * FROM users
+    WHERE age < 20;
 
-= TODO
+= Index Only Scan
+
+  * 索引がデータも返す
+    * テーブルにアクセスしないので高速
+  * PGroonga・B-tree：サポート
+  * GIN：未サポート
+
+= amindexでのポイント
+
+  * (({amcanreturn()}))
+    * (({true}))を返す
+  * (({amgettuple()}))
+    * (({scan->xs_want_itup}))なら\n
+      (({scan->xs_itup}))にデータを設定
+
+= マルチカラムインデックス
+
+  # coderay sql
+  CREATE INDEX index ON memos
+    USING pgroonga (title, content);
+  SELECT * FROM memos
+    WHERE title @@ '...' AND
+        content @@ '...';
+
+(('tag:center'))
+(('note:titleでもcontentでもマッチ！'))\n
+(('note:と書けないのでそんなにうれしくない'))
 
 = 設計ミス
 
@@ -471,11 +558,22 @@ JSON内の全テキストから全文検索
   ALTER DATABASE name
     SET search_path = '$user',public,pgroonga,pg_catalog;
 
-= TODO
+= (({jsonb @@ text}))
+
+(('tag:center'))
+全文検索にすればよかった
+
+  # coderay sql
+  jsonb @@ 'string @ "キーワード"'
+  -- ↓
+  jsonb @@ 'キーワード'
+
+(('tag:center'))
+(('note:（今の細かい検索条件を指定できる昨日は別演算子にする）'))
 
 = 今後
 
-= Groongaを直接使う機能
+= もっとGroongaを活かす
 
   # RT
   delimiter = [|]
@@ -512,7 +610,8 @@ find\n
   # coderay sql
   body @@ 'ポスグレ'::pgroonga.query
 
-組み込みの(({text @@ text}))との競合回避
+(('tag:center'))
+(('note:組み込みの(({text @@ text}))との競合回避'))
 
 = 重みサポート
 
@@ -520,10 +619,8 @@ find\n
   -- タイトルのほうが本文より10倍重要
   body @@ ('title * 10 || body', 'ポスグレ')
 
-(('tag:center'))\n
+(('tag:center'))
 (('note:Groongaでは使える'))
-
-= TODO
 
 = まとめ
 
@@ -532,10 +629,14 @@ find\n
   * PGroongaには設計ミスがある
   * PGroongaはもっと便利になる
 
+(('wait'))
+(('tag:center'))
+PGroongaを使おう！
+
 = おしらせ
 
   * Groonga Meatup 2015\n
     (('note:https://groonga.doorkeeper.jp/events/31482'))
     * PGroongaの話題もアリ
-    * 多少空きあり
+    * 多少空きアリ(('note:（定員を多少増やせる）'))
   * 11月29日（日）13:30開始
