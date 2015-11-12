@@ -121,7 +121,8 @@ contrib/pg_trgmを使う\n
 
 (('tag:center'))
 データ：Wikipedia日本語版\n
-(('note:約184万レコード・平均サイズ約3.8KB'))
+(('note:約184万レコード・平均サイズ約3.8KB'))\n
+(('note:詳細：http://www.clear-code.com/blog/2015/5/25.html'))
 
 = 検索時間：比較
 
@@ -314,9 +315,36 @@ Groonga
   * ダンプのリストア
   * サービス復旧
 
+= 索引作成
+
+  # RT
+  delimiter = [|]
+
+  元データの\nロード時間 | 索引\n作成時間
+
+  16分31秒 | 25分37秒
+
+(('tag:center'))
+データ：Wikipedia日本語版\n
+(('note:約184万レコード・平均サイズ約3.8KB'))\n
+(('note:詳細：http://www.clear-code.com/blog/2015/5/25.html'))
+
+= 索引作成：比較
+
+  # RT
+  delimiter = [|]
+
+  PGroonga | pg_bigm
+
+  25分37秒 | 5時間56分15秒
+
+(('tag:center'))
+pg_bigmより約14倍速い！
+
 = 速い理由
 
-静的索引構築を\n
+((*静的*))\n
+索引構築を\n
 サポート
 
 = 索引構築方法
@@ -376,113 +404,138 @@ pg_bigmより約14倍速い！
   * 索引だけで検索可能
   * 更新中も検索可能
   * 間欠的な性能劣化なし
-  * 索引構築が速い
+  * 静的索引構築をサポート
 
-= xxx
+= 速さ以外の利点1
 
+便利な独自機能
 
-TODO: 図を入れる
+= 独自機能1
 
-  * 完全の検索
-    * インデックスで検索→対象文書を特定
-  * recheckありの検索
-    * インデックスで検索→候補文書の絞り込み
-    * 候補文書を全件スキャンして対象文書を特定
-    * 文書が長いとスキャンが重い
+見慣れた\n
+クエリー言語
 
-= 本格的な例3
+= 例
 
-(('tag:center'))
-インデックスの作り直しが速い
+    # coderay sql
+    body @@ 'PostgreSQL OR MySQL -Oracle'
 
-この特徴が有用なケース：
+  * Web検索エンジン互換
+    * →ユーザーの入力をそのまま使える
+  * デフォルトAND
+  * OR・-（除外）あり
 
-  * ダンプのリストア
-  * サービス復旧
+= 独自機能2
 
-= 本格的な例4
+JSON+全文検索
 
-(('tag:center'))
-削除が速い
+= 例
 
-この特徴が有用なケース：
-
-  * (({VACUUM}))
-
-= 速い理由
-
-TODO: 図を入れる
-
-  * ピンポイントで\n
-    ポスティングリストを\n
-    更新するから
-    * 注：削除対象の文書とIDが必要
-  * GINはすべての\n
-    ポスティングリストを\n
-    スキャンする
-    * 注：削除対象の文書IDだけが必要
-
-= amindexでのポイント
-
-  * (({ambulkdelete()}))でctidから\n
-    インデックス対象のデータを\n
-    参照できるようにする
-    * PostgreSQLからは取得できない
-
-= 本格的な例5
+  # coderay sql
+  INSERT INTO logs (record)
+    VALUES ('{"host": "ダウンホスト"}'),
+           ('{"message": "シャットダウン"}');
+  SELECT * FROM logs
+    WHERE record @@ 'string @@ "ダウン"'
+  --           record
+  -- ----------------------------
+  -- {"host":    "ダウンホスト"}
+  -- {"message": "シャットダウン"}
 
 (('tag:center'))
-長い文書でも検索が速い
+JSON内の全テキストから全文検索
 
-この特徴が有用なサービス例：
+= 速さ以外の利点2
 
-  * Wiki
-    * イメージ：Wikipedia
-  * ドキュメント検索
-    * イメージ：ファイルサーバー検索
+独自じゃない機能
 
-= 長い文書で検索が速い理由
+= タグ検索
 
-((*完全*))転置\n
-インデックス
+= 範囲検索
 
-= 転置インデックス
+= index only scan
 
-  * 完全：位置情報あり
-    * Groonga
-  * 無印：位置情報なし
-    * GIN
+= TODO
 
-= 位置情報あり
+= 設計ミス
 
-TODO: 図を入れる
-
-  * 完全の検索
-    * インデックスで検索→対象文書を特定
-  * recheckありの検索
-    * インデックスで検索→候補文書の絞り込み
-    * 候補文書を全件スキャンして対象文書を特定
-    * 文書が長いとスキャンが重い
-
-= 本格的な例6
+= (({text @@ text}))
 
 (('tag:center'))
-表記のゆらぎを吸収できる
+組み込みの定義と競合\n
+(('note:（ts_vector @@ ts_queryにキャストされる）'))
 
-この特徴が有用なサービス例：
+回避方法：
 
-  * SNS
-  * Wiki
-  * ブログ
+  # coderay sql
+  ALTER DATABASE name
+    SET search_path = '$user',public,pgroonga,pg_catalog;
 
-(('note:不特定多数が記述する文書を検索したいとき'))
+= TODO
 
-= 表記ゆらぎの吸収
+= 今後
 
-  * テキストを正規化
-    * ﾎﾟｽｸﾞﾚ→ポスグレ
-  * 同義語展開
-    * ネジ→ネジ OR ボルト
-  * ステミング
-    * found/finds→find
+= Groongaを直接使う機能
 
+  # RT
+  delimiter = [|]
+
+  PGroonga | pg_bigm | Groonga
+
+  0.646s | 0.556s | 0.085s(!)
+
+(('note:ヒット数635,792、検索語は2文字'))
+
+(('tag:center'))
+生Groongaは1桁速い！\n
+(('note:詳細：https://github.com/groonga/wikipedia-search/issues/3'))
+
+= 同義語展開サポート
+
+  # coderay sql
+  body @@ pgroonga.expand_query('ネジ')
+  -- ↓
+  body @@ 'ネジ OR ねじ OR ボルト'
+
+(('tag:center'))
+(('note:Groongaでは使える'))
+
+= ステミングサポート
+
+found/finds\n
+↓\n
+find\n
+(('note:Groongaでは使える'))
+
+= text @@ pgroonga.query
+
+  # coderay sql
+  body @@ 'ポスグレ'::pgroonga.query
+
+組み込みの(({text @@ text}))との競合回避
+
+= 重みサポート
+
+  # coderay sql
+  -- タイトルのほうが本文より10倍重要
+  body @@ ('title * 10 || body', 'ポスグレ')
+
+(('tag:center'))\n
+(('note:Groongaでは使える'))
+
+= TODO
+
+= まとめ
+
+  * PGroongaは速い
+  * PGroongaは便利
+  * PGroongaには設計ミスがある
+  * PGroongaはもっと便利になる
+
+= おしらせ
+
+  * Groonga Meatup 2015\n
+    (('note:https://groonga.doorkeeper.jp/events/31482'))
+    * PGroongaの話題もアリ
+    * 多少空きあり
+  * 11月29日（日）13:30開始
