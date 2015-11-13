@@ -5,7 +5,7 @@
 : author
    須藤功平
 : institution
-   クリアコード
+   株式会社クリアコード
 : content-source
    PostgreSQLカンファレンス2015
 : date
@@ -22,7 +22,9 @@ PostgreSQLのamindexを説明
 = 方法
 
 PGroongaの実装を紹介\n
-(('note:（PGroongaはamindexとして実装されているため）'))
+(('note:PGroongaはamindexとして実装されているため'))\n
+(('note:ただし、ヒントだけなので詳細はPGroongaのソースを参照'))\n
+(('note:https://github.com/pgroonga/pgroonga'))
 
 = 本当の目的
 
@@ -67,7 +69,7 @@ PostgreSQLに\n
     WHERE to_tsvector('english', column) @@ '...';
 
 (('tag:center'))
-組み込み機能を使う\n
+組み込みの全文検索機能\n
 日本語非対応\n
 (('note:http://www.postgresql.org/docs/current/static/textsearch.html'))
 
@@ -80,7 +82,7 @@ PostgreSQLに\n
     WHERE column % '...';
 
 (('tag:center'))
-contrib/pg_trgmを使う\n
+contrib/pg_trgm\n
 日本語非対応\n
 (('note:http://www.postgresql.org/docs/current/static/pgtrgm.html'))
 
@@ -171,6 +173,7 @@ Groonga
 (('tag:center'))
 長い文書でも検索性能が落ちない
 
+(('tag:margin-top * 2'))
 この特徴が有用なサービス例：
 
   * Wiki
@@ -189,6 +192,7 @@ Groonga
     * Groonga
   * 無印：位置情報なし
     * GIN
+    * Groonga(('note:（必要なければ入れないことができる）'))
 
 = 転置索引の違い
 
@@ -221,6 +225,7 @@ Groonga
 (('tag:center'))
 常時更新・常時検索に強い
 
+(('tag:margin-top * 2'))
 この特徴が有用なサービス例：
 
   * SNS
@@ -281,6 +286,7 @@ Groonga
 (('tag:center'))
 継続的な更新に強い
 
+(('tag:margin-top * 2'))
 この特徴が有用なサービス例：
 
   * SNS
@@ -310,6 +316,7 @@ Groonga
 (('tag:center'))
 索引の作り直しが速い
 
+(('tag:margin-top * 2'))
 この特徴が有用なケース：
 
   * ダンプのリストア
@@ -349,31 +356,30 @@ pg_bigmより約14倍速い！
 
 = 索引構築方法
 
-  * 動的
-    * 計算量：O(n(('sup:2')))
+  * ((*動的*))索引構築
     * 構築中も完了した分は検索可能
-  * 静的
-    * 計算量：O(n)
-    * 構築完了まで使えないが速い
+    * 即時反映可・一括登録不向き
+  * ((*静的*))索引構築
+    * 構築完了まで使えないが速い\n
+      (('note:（処理時間は入力に比例。指数関数的ではない。）'))
+    * 即時反映不可・一括登録向き
 
-(('note:n:文書数'))
-
-= SQL
+= SQLの違い
 
   # coderay sql
-  -- 動的
+  -- 動的索引構築
   CREATE INDEX ...;
   INSERT ...;
-  -- 静的
+  -- 静的索引構築
   INSERT ...;
   CREATE INDEX ...;
 
 = amindexでのポイント
 
   * (({aminsert()}))
-    * 動的インデックス構築を実装
+    * 動的索引構築を実装
   * (({ambuild()}))
-    * 静的インデックス構築を実装
+    * 静的索引構築を実装
 
 = 速い理由のまとめ
 
@@ -494,7 +500,7 @@ JSON内の全テキストから全文検索
 = 速さ以外の利点2
 
 見慣れた機能\n
-(('note:（B-tree・GINの代わりに使える）'))
+(('note:B-tree・GINの代わりに使える'))
 
 = タグ検索
 
@@ -531,6 +537,18 @@ JSON内の全テキストから全文検索
     * (({scan->xs_want_itup}))なら\n
       (({scan->xs_itup}))にデータを設定
 
+= LIKE
+
+  # coderay sql
+  CREATE INDEX index ON memos
+    USING pgroonga (content);
+  SELECT * FROM memos
+    WHERE content LIKE '%...%';
+
+(('tag:center'))
+索引を使って高速検索\n
+アプリケーションの変更不要
+
 = マルチカラムインデックス
 
   # coderay sql
@@ -550,8 +568,9 @@ JSON内の全テキストから全文検索
 
 (('tag:center'))
 組み込みの定義と競合\n
-(('note:（ts_vector @@ ts_queryにキャストされる）'))
+(('note:ts_vector @@ ts_queryにキャストされる'))
 
+(('tag:margin-top * 2'))
 回避方法：
 
   # coderay sql
@@ -569,7 +588,7 @@ JSON内の全テキストから全文検索
   jsonb @@ 'キーワード'
 
 (('tag:center'))
-(('note:（今の細かい検索条件を指定できる昨日は別演算子にする）'))
+(('note:今の細かい検索条件を指定できる機能は別演算子にする'))
 
 = 今後
 
