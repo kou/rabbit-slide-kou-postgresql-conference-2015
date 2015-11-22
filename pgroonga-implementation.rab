@@ -526,7 +526,8 @@ JSON内の全テキストから全文検索
 
   * 索引がデータも返す
     * テーブルにアクセスしないので高速
-  * PGroonga・B-tree：サポート
+  * PGroonga・B-tree：サポート\n
+    (('note:PostgreSQL 9.5からはGiSTもサポート'))
   * GIN：未サポート
 
 = amindexでのポイント
@@ -640,6 +641,17 @@ find\n
 
 (('tag:center'))
 (('note:Groongaでは使える'))
+
+= 複合主キーサポート
+
+  # coderay sql
+  CREATE TABLE t (
+    c1 INT,
+    c2 INT,
+    PRIMARY KEY (c1, c2)
+  );
+  CREATE INDEX index ON t
+    USING pgroonga (c1, c2);
 
 = まとめ
 
