@@ -133,10 +133,10 @@ contrib/pg_trgm\n
 
   ヒット数 | PGroonga | pg_bigm
 
-  368 | 0.030s(!) | 0.107s(('   '))
-  17,172 | 0.121s(!) | 1.224s(('   '))
-  22,885 | 0.179s(!) | 2.472s(('   '))
-  625,792(*) | 0.646s(('   ')) | 0.556s(!)
+  368 | ((*0.030s*)) | (('0.107s'))
+  17,172 | ((*0.121s*)) | (('1.224s'))
+  22,885 | ((*0.179s*)) | (('2.472s'))
+  625,792\n(('note:(*)')) | (('0.646s')) | ((*0.556s*))
 
 (('note:(*) 他は検索語が3文字以上でこれだけ2文字'))
 
@@ -599,7 +599,7 @@ JSON内の全テキストから全文検索
 
   PGroonga | pg_bigm | Groonga
 
-  0.646s | 0.556s | 0.085s(!)
+  (('0.646s')) | (('0.556s')) | ((*0.085s*))
 
 (('note:ヒット数635,792、検索語は2文字'))
 
@@ -659,3 +659,17 @@ PGroongaを使おう！
     * PGroongaの話題もアリ
     * 多少空きアリ(('note:（定員を多少増やせる）'))
   * 11月29日（日）13:30開始
+
+# == スライドプロパティ
+
+# : background-image
+#    private/images/groonga-meatup-2015-design.svg
+
+# : background-image-relative-width
+#    22
+
+# : background-image-align
+#    right
+
+# : background-image-vertical-align
+#    bottom
