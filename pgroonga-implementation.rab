@@ -79,7 +79,7 @@ PostgreSQLに\n
   CREATE INDEX name ON table
     USING gin (column gin_trgm_ops);
   SELECT * FROM table
-    WHERE column % '...';
+    WHERE column LIKE '%...%';
 
 (('tag:center'))
 contrib/pg_trgm\n
@@ -159,7 +159,8 @@ PGroongaは安定して速い！
 
 = 全文検索ライブラリー
 
-Groonga
+Groonga\n
+（ぐるんが）
 
 = Groonga
 
