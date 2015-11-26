@@ -240,6 +240,12 @@ Groonga\n
 参照性能が\n
 落ちない
 
+= 性能傾向
+
+  # image
+  # src = images/performance-charcteristic-for-constant-read-and-write.svg
+  # relative_height = 95
+
 = 落ちない理由
 
 更新時に\n
