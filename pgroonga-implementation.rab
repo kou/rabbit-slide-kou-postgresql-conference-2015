@@ -308,15 +308,43 @@ Groonga\n
   * GINは両方ある
     * (({FASTUPDATE}))を無効にしていない場合
 
-= 間欠的性能劣化がない理由
+= 間欠的性能劣化：Groonga
+
+(('tag:center'))
+Groongaは間欠的性能劣化なし
 
   * 常に最新ポスティングリストを\n
     維持しているから
     * 更新負荷が高くならない対策入り\n
       (('note:https://github.com/groonga/groonga/wiki/Memo'))
-  * GINは維持をサボって高速化
+
+= Groongaの索引更新
+
+  # image
+  # src = images/update-groonga.svg
+  # relative_height = 100
+
+= 間欠的性能劣化：GIN
+
+(('tag:center'))
+GINは間欠的性能劣化あり
+
+  * 最新ポスティングリスト維持を\n
+    サボって高速化しているから
     * サボったつけを払うときに性能劣化
     * 例：検索時・更新が溜まりすぎた時
+
+= GINの索引更新
+
+  # image
+  # src = images/update-gin.svg
+  # relative_height = 100
+
+= GINの索引検索
+
+  # image
+  # src = images/search-gin.svg
+  # relative_height = 100
 
 = 本格的な例4
 
@@ -659,6 +687,11 @@ find\n
   );
   CREATE INDEX index ON t
     USING pgroonga (c1, c2);
+
+= ((' '))
+
+まとめ\n
+(('note:時間が余ったらチュートリアルを自慢する'))
 
 = まとめ
 
